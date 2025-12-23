@@ -1,0 +1,116 @@
+# Kubernetes Deployment for nodeport-router
+#
+# SETUP INSTRUCTIONS:
+# 1. Update the ConfigMap values (K8S_HOST, ROUTER_BASE) below
+# 2. Create the Secret with your router credentials:
+#    kubectl create secret generic nodeport-router-secrets \
+#      --from-literal=ROUTER_ADMIN='your-router-username' \
+#      --from-literal=ROUTER_PASS='your-router-password' \
+#      --namespace=default
+# 3. Update the container image name if using a different registry
+# 4. Apply the deployment: kubectl apply -f deployment.yaml
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nodeport-router
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: nodeport-router
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: nodeport-router
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: nodeport-router
+subjects:
+- kind: ServiceAccount
+  name: nodeport-router
+  namespace: default
+---
+# ConfigMap containing non-sensitive configuration
+# Update these values with your actual configuration before deploying
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nodeport-router-config
+  namespace: default
+data:
+  K8S_HOST: "bow0"  # CHANGE ME
+  ROUTER_BASE: "http://192.168.254.254" # CHANGE ME
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodeport-router
+  namespace: default
+  labels:
+    app: nodeport-router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodeport-router
+  template:
+    metadata:
+      labels:
+        app: nodeport-router
+    spec:
+      serviceAccountName: nodeport-router
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: nodeport-router
+        image: docker.io/misleb/nodeport-router:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: K8S_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: nodeport-router-config
+              key: K8S_HOST
+        - name: ROUTER_BASE
+          valueFrom:
+            configMapKeyRef:
+              name: nodeport-router-config
+              key: ROUTER_BASE
+        - name: ROUTER_ADMIN
+          valueFrom:
+            secretKeyRef:
+              name: nodeport-router-secrets
+              key: ROUTER_ADMIN
+        - name: ROUTER_PASS
+          valueFrom:
+            secretKeyRef:
+              name: nodeport-router-secrets
+              key: ROUTER_PASS
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+
