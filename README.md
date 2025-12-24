@@ -91,14 +91,17 @@ kubectl logs -l app=nodeport-router
 
 ## How It Works
 
+1. On startup treats all existing NodePorts as "created" and tries to add them to router
 1. The controller watches all Kubernetes services across all namespaces
+2. Maintains a cache of NodePorts to track previous values
 2. When a NodePort service is detected (created or modified):
+   - Gets previous values (if any)
    - Extracts the NodePort and target port from the service
    - Creates a port forward rule on the router mapping:
      - External port: NodePort
      - Internal port: Target port
      - Device: Configured `K8S_HOST`
-3. When a NodePort service is deleted, the corresponding port forward rules are removed (TODO: deletion logic needs to be implemented)
+3. When a NodePort service is deleted, the corresponding port forward rules are removed
 
 ## Port Forward Naming
 
@@ -183,8 +186,15 @@ These permissions are defined in the `ClusterRole` in `deployment.yaml`.
 ## Limitations
 
 - Service deletion handling is not fully implemented (port forwards are not automatically removed)
-- Update logic for existing port forwards may need refinement
 - Currently only supports Arris NVG443B router
+
+## TODO
+
+[ ] Handle delete service in router
+[ ] Optionally purge all service related forwards at startup and re-add them (could be disruptive to service)
+[ ] Accept remote commands such as the above purge or allow arbitrary forwards to be created as a sort of API proxy
+[ ] Add authorization for above commands (can we reuse kubectl auth?)
+[ ] Make the cache refresh time configurable
 
 ## Contributing
 
