@@ -48,6 +48,10 @@ func main() {
 	}
 
 	routerClient := router.NewRouterClient(baseURL, routerAdmin, routerPass)
+	log.Println("Authenticating to", baseURL)
+	if err := routerClient.Login(); err != nil {
+		log.Fatalf("Error logging in to router: %v", err)
+	}
 
 	controller := controller.Controller{
 		K8sClient:    k8sClient,

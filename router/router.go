@@ -264,7 +264,9 @@ func (c *RouterClient) doRequest(req *http.Request) error {
 	}
 
 	// Check for error icon
-	if icon := findElementByID(doc, "error-message-icon"); icon != nil {
+	icon1 := findElementByID(doc, "error-message-icon")
+	icon2 := findElementByAttr(doc, "src", "/images/icon_error.png")
+	if icon1 != nil || icon2 != nil {
 		errorDiv := findElementByID(doc, "error-message-text")
 		if errorDiv != nil {
 			errorText := strings.TrimSpace(getTextContent(errorDiv))

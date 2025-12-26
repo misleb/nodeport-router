@@ -78,7 +78,7 @@ spec:
       containers:
       - name: nodeport-router
         image: docker.io/misleb/nodeport-router:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         env:
         - name: K8S_HOST
           valueFrom:

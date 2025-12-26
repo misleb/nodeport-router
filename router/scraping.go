@@ -16,6 +16,22 @@ func extractNonce(htmlStr string) string {
 	return ""
 }
 
+func findElementByAttr(n *html.Node, attribute, value string) *html.Node {
+	if n.Type == html.ElementNode {
+		for _, attr := range n.Attr {
+			if attr.Key == attribute && attr.Val == value {
+				return n
+			}
+		}
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if result := findElementByAttr(c, attribute, value); result != nil {
+			return result
+		}
+	}
+	return nil
+}
+
 // findElementByID finds an element with the specified ID
 func findElementByID(n *html.Node, id string) *html.Node {
 	if n.Type == html.ElementNode {
